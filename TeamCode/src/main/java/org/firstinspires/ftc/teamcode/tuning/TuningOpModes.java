@@ -96,7 +96,7 @@ public final class TuningOpModes {
 
             @Override
             public int getPerpEncoderPosition() {
-                return pl.driver.getEncoderY();
+                return -pl.driver.getEncoderY();
             }
 
             @Override
