@@ -36,7 +36,6 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpModeManager;
 import com.qualcomm.robotcore.eventloop.opmode.OpModeRegistrar;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.internal.opmode.OpModeMeta;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
@@ -51,14 +50,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public final class TuningOpModes {
+@Deprecated
+public final class TuningOpModes_Depreciated {
     // TODO: change this to TankDrive.class if you're using tank
     public static final Class<?> DRIVE_CLASS = MecanumDrive.class;
 
     public static final String GROUP = "quickstart";
     public static final boolean DISABLED = false;
 
-    private TuningOpModes() {}
+    private TuningOpModes_Depreciated() {}
 
     private static OpModeMeta metaForClass(Class<? extends OpMode> cls) {
         return new OpModeMeta.Builder()
@@ -70,38 +70,30 @@ public final class TuningOpModes {
 
     private static PinpointView makePinpointView(PinpointLocalizer pl) {
         return new PinpointView() {
-            ElapsedTime timer = new ElapsedTime();
-            double dt = 0.0, lastParPosition, lastPerpPosition;
+            @Override
+            public int getPerpEncoderVelocity() {
+                return 0;
+            }
+
+            @Override
+            public int getParEncoderVelocity() {
+                return 0;
+            }
 
             GoBildaPinpointDriver.EncoderDirection parDirection = pl.initialParDirection;
             GoBildaPinpointDriver.EncoderDirection perpDirection = pl.initialPerpDirection;
 
             @Override
             public void update() {
-                dt = timer.seconds() - dt;
-                lastParPosition = getParEncoderPosition();
-                lastPerpPosition = getPerpEncoderPosition();
                 pl.driver.update();
             }
 
             @Override
-            public int getParEncoderPosition() {
-                return pl.driver.getEncoderX();
-            }
-
-            @Override
-            public int getParEncoderVelocity() {
-                return (int) Math.round((getParEncoderPosition() - lastParPosition) / dt);
-            }
+            public int getParEncoderPosition() { return pl.driver.getEncoderX();}
 
             @Override
             public int getPerpEncoderPosition() {
-                return pl.driver.getEncoderY();
-            }
-
-            @Override
-            public int getPerpEncoderVelocity() {
-                return (int) Math.round((getPerpEncoderPosition() - lastPerpPosition) / dt);
+                return -pl.driver.getEncoderY();
             }
 
             @Override
@@ -189,7 +181,7 @@ public final class TuningOpModes {
                 }
 
                 return new DriveView(
-                        DriveType.MECANUM,
+                    DriveType.MECANUM,
                         MecanumDrive.PARAMS.inPerTick,
                         MecanumDrive.PARAMS.maxWheelVel,
                         MecanumDrive.PARAMS.minProfileAccel,
