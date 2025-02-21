@@ -8,6 +8,9 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.PinpointView;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
 import java.util.Objects;
 
 @Config
@@ -43,6 +46,11 @@ public final class PinpointLocalizer implements Localizer {
         driver.setEncoderDirections(initialParDirection, initialPerpDirection);
 
         driver.resetPosAndIMU();
+        try {
+            wait(300);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         txWorldPinpoint = initialPose;
     }
@@ -61,10 +69,10 @@ public final class PinpointLocalizer implements Localizer {
     public PoseVelocity2d update() {
         driver.update();
         if (Objects.requireNonNull(driver.getDeviceStatus()) == GoBildaPinpointDriver.DeviceStatus.READY) {
-            txPinpointRobot = new Pose2d(driver.getPosX() / 25.4, driver.getPosY() / 25.4, driver.getHeading());
-            Vector2d worldVelocity = new Vector2d(driver.getVelX() / 25.4, driver.getVelY() / 25.4);
-            Vector2d robotVelocity = Rotation2d.fromDouble(-driver.getHeading()).times(worldVelocity);
-            return new PoseVelocity2d(robotVelocity, driver.getHeadingVelocity());
+            txPinpointRobot = new Pose2d(driver.getPosition().getX(DistanceUnit.INCH), driver.getPosition().getX(DistanceUnit.INCH), driver.getHeading());
+            Vector2d worldVelocity = new Vector2d(driver.getVelocity().getX(DistanceUnit.INCH), driver.getVelocity().getY(DistanceUnit.INCH));
+            Vector2d robotVelocity = Rotation2d.fromDouble(-driver.getPosition().getHeading(AngleUnit.RADIANS)).times(worldVelocity);
+            return new PoseVelocity2d(robotVelocity, driver.getVelocity().getHeading(AngleUnit.RADIANS));
         }
         return new PoseVelocity2d(new Vector2d(0, 0), 0);
     }
