@@ -16,10 +16,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.MecanumDrive;
-
 @Autonomous(name = "Roadrunner 1.0 Auto Example Test", group = "Autonomous")
-public class NewAutpTest extends LinearOpMode {
+public class NewAutoTest extends LinearOpMode {
     public static class Lift {
         private DcMotorEx lift;
 
