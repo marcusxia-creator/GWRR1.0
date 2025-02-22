@@ -24,6 +24,7 @@ public final class PinpointLocalizer implements Localizer {
 
     public final GoBildaPinpointDriver driver;
     public final GoBildaPinpointDriver.EncoderDirection initialParDirection, initialPerpDirection;
+    public final double inPerTick;
 
     private Pose2d txWorldPinpoint;
     private Pose2d txPinpointRobot = new Pose2d(0, 0, 0);
@@ -33,6 +34,7 @@ public final class PinpointLocalizer implements Localizer {
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
         driver = hardwareMap.get(GoBildaPinpointDriver.class, "Pinpoint");
 
+        this.inPerTick = inPerTick;
         double mmPerTick = 25.4 * inPerTick;
         //driver.setEncoderResolution(1 / mmPerTick);
         driver.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
@@ -46,11 +48,6 @@ public final class PinpointLocalizer implements Localizer {
         driver.setEncoderDirections(initialParDirection, initialPerpDirection);
 
         driver.resetPosAndIMU();
-        try {
-            wait(300);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
 
         txWorldPinpoint = initialPose;
     }
@@ -69,10 +66,10 @@ public final class PinpointLocalizer implements Localizer {
     public PoseVelocity2d update() {
         driver.update();
         if (Objects.requireNonNull(driver.getDeviceStatus()) == GoBildaPinpointDriver.DeviceStatus.READY) {
-            txPinpointRobot = new Pose2d(driver.getPosition().getX(DistanceUnit.INCH), driver.getPosition().getX(DistanceUnit.INCH), driver.getHeading());
+            txPinpointRobot = new Pose2d(driver.getPosition().getX(DistanceUnit.INCH), driver.getPosition().getY(DistanceUnit.INCH), driver.getHeading());
             Vector2d worldVelocity = new Vector2d(driver.getVelocity().getX(DistanceUnit.INCH), driver.getVelocity().getY(DistanceUnit.INCH));
-            Vector2d robotVelocity = Rotation2d.fromDouble(-driver.getPosition().getHeading(AngleUnit.RADIANS)).times(worldVelocity);
-            return new PoseVelocity2d(robotVelocity, driver.getVelocity().getHeading(AngleUnit.RADIANS));
+            Vector2d robotVelocity = Rotation2d.fromDouble(-driver.getHeading()).times(worldVelocity);
+            return new PoseVelocity2d(robotVelocity, driver.getHeadingVelocity());
         }
         return new PoseVelocity2d(new Vector2d(0, 0), 0);
     }
