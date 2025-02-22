@@ -53,6 +53,8 @@ import java.util.List;
 
 @Config
 public final class MecanumDrive {
+    /**
+    * old pid parameter - 20250219 done by marcus
     public static class Params {
         // IMU orientation
         // TODO: fill in these values based on
@@ -75,6 +77,48 @@ public final class MecanumDrive {
 
         // path profile parameters (in inches)
         public double maxWheelVel = 60;
+        public double minProfileAccel = -55;
+        public double maxProfileAccel = 55;
+
+        // turn profile parameters (in radians)
+        public double maxAngVel = Math.PI; // shared with path
+        public double maxAngAccel = Math.PI;
+
+        // path controller gains
+        public double axialGain = 5.0;
+        public double lateralGain = 2.0;
+        public double headingGain = 2.0; // shared with turn
+
+        public double axialVelGain = 0.3;
+        public double lateralVelGain = 0.0;
+        public double headingVelGain = 0.01; // shared with turn
+    }
+     */
+    /**
+     * new pid parameter - 20250221 done by marcus&Ryan
+     */
+    public static class Params {
+        // IMU orientation
+        // TODO: fill in these values based on
+        //   see https://ftc-docs.firstinspires.org/en/latest/programming_resources/imu/imu.html?highlight=imu#physical-hub-mounting
+        public RevHubOrientationOnRobot.LogoFacingDirection logoFacingDirection =
+                RevHubOrientationOnRobot.LogoFacingDirection.UP;
+        public RevHubOrientationOnRobot.UsbFacingDirection usbFacingDirection =
+                RevHubOrientationOnRobot.UsbFacingDirection.RIGHT;
+
+        // drive model parameters
+        //public double inPerTick = (Math.PI*96/25.4*1.5)/537.7;
+        public double inPerTick = (Math.PI * 48 / 25.4) / 2000;
+        public double lateralInPerTick = 0.001659226555;
+        public double trackWidthTicks = 4330.188893975374; //12.03/inPerTick;
+
+        // feedforward parameters (in tick units)
+        public double kS = 1.226026103465042;
+        public double kV = 0.00038;
+        public double kA = 0.0001;
+
+        // path profile parameters (in inches)
+        public double maxWheelVel = 60;
         public double minProfileAccel = -35;
         public double maxProfileAccel = 35;
 
@@ -83,13 +127,13 @@ public final class MecanumDrive {
         public double maxAngAccel = Math.PI;
 
         // path controller gains
-        public double axialGain = 13.0;
-        public double lateralGain = 0.0;
-        public double headingGain = 9.0; // shared with turn
+        public double axialGain = 7.0;
+        public double lateralGain = 0;
+        public double headingGain = 4.0; // shared with turn
 
-        public double axialVelGain = 0.9;
-        public double lateralVelGain = 0.0;
-        public double headingVelGain = 0.7; // shared with turn
+        public double axialVelGain = 0.5;
+        public double lateralVelGain = 0.000;
+        public double headingVelGain = 0.05; // shared with turn
     }
 
     public static Params PARAMS = new Params();
