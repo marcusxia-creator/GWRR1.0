@@ -6,7 +6,9 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.Rotation2d;
 import com.acmerobotics.roadrunner.SequentialAction;
+import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
@@ -16,12 +18,18 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+
 
 @Autonomous(name = "Roadrunner 1.0 Auto Example Test", group = "Autonomous")
 public class NewAutoTest extends LinearOpMode {
     public static class Lift {
         private DcMotorEx liftLeft;
         private DcMotorEx liftRight;
+        private ElapsedTime timer;
+        private GoBildaPinpointDriver pinpoint;
 
         public Lift(HardwareMap hardwareMap) {
             liftLeft = hardwareMap.get(DcMotorEx.class, "VS_Left_Motor");
@@ -38,13 +46,14 @@ public class NewAutoTest extends LinearOpMode {
             @Override
             public boolean run(@NonNull TelemetryPacket packet) {
                 if (!initialized) {
-                    liftLeft.setPower(0.8);
+                    liftLeft.setPower(0.4);
+                    liftRight.setPower(0.4);
                     initialized = true;
                 }
 
                 double pos = liftLeft.getCurrentPosition();
                 packet.put("liftLeftPos", pos);
-                if (pos < 3000.0) {
+                if (pos > 3000.0) {
                     return true;
                 } else {
                     liftLeft.setPower(0);
@@ -60,13 +69,14 @@ public class NewAutoTest extends LinearOpMode {
             @Override
             public boolean run(@NonNull TelemetryPacket packet) {
                 if (!initialized) {
-                    liftLeft.setPower(-0.8);
+                    liftLeft.setPower(-0.4);
+                    liftRight.setPower(-0.4);
                     initialized = true;
                 }
 
                 double pos = liftLeft.getCurrentPosition();
                 packet.put("liftPos", pos);
-                if (pos > 100.0) {
+                if (pos < 100.0) {
                     return true;
                 } else {
                     liftLeft.setPower(0);
@@ -83,13 +93,13 @@ public class NewAutoTest extends LinearOpMode {
         private Servo claw;
 
         public Claw(HardwareMap hardwareMap) {
-            claw = hardwareMap.get(Servo.class, "claw");
+            claw = hardwareMap.get(Servo.class, "Deposit_Claw_Servo");
         }
 
         public class CloseClaw implements Action {
             @Override
             public boolean run(@NonNull TelemetryPacket packet) {
-                claw.setPosition(0.55);
+                claw.setPosition(0.08);
                 return false;
             }
         }
@@ -100,7 +110,7 @@ public class NewAutoTest extends LinearOpMode {
         public class OpenClaw implements Action {
             @Override
             public boolean run(@NonNull TelemetryPacket packet) {
-                claw.setPosition(1.0);
+                claw.setPosition(0.36);
                 return false;
             }
         }
@@ -113,27 +123,56 @@ public class NewAutoTest extends LinearOpMode {
         // Define the starting position
         Pose2d startPose = new Pose2d(0, 0, 0);
 
+
         // Initialize MecanumDrive with start pose
         MecanumDrive drive = new MecanumDrive(hardwareMap, startPose);
         Claw claw = new Claw(hardwareMap);
         Lift lift = new Lift(hardwareMap);
 
+        GoBildaPinpointDriver pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "Pinpoint");
+        pinpoint.resetPosAndIMU();
+        double initialAngle = pinpoint.getPosition().getHeading(AngleUnit.DEGREES);
+
+        telemetry.addData("IMU Initialized", "Initial Angle: %.2f radians", initialAngle);
+        telemetry.update();
+
+        ElapsedTime timer = new ElapsedTime();
+
         // Build the action-based trajectory
-        TrajectoryActionBuilder tab2 = drive.actionBuilder(startPose)
-                .splineToConstantHeading(new Vector2d(20,20),Math.toRadians(180));// Turn 90 degrees
+        TrajectoryActionBuilder traj1 = drive.actionBuilder(startPose)
+                .splineToConstantHeading(new Vector2d(20,20),Math.toRadians(90));// Turn 90 degrees
 
-
+        Action trajpath = traj1.build();
+        Action trajectoryActionCloseOut = traj1.endTrajectory().fresh()
+                .splineTo(new Vector2d(0, 0), Math.toRadians(90))
+                .build();
 
         waitForStart();
         if (isStopRequested()) return;
 
-        // Run the action sequence
-        Actions.runBlocking( new SequentialAction(
-                tab2.build(),
-                new ParallelAction(
-                lift.liftUp(),
-                claw.openClaw(),
-                lift.liftDown()))
-        );
+        // Run the action sequence in parallel (without `Actions.delay()`)
+        Actions.runBlocking(new ParallelAction(
+                new SequentialAction(
+                        trajpath,  // Move forward
+                        trajectoryActionCloseOut  // Move back
+                ),
+                new SequentialAction(
+                        claw.CloseClaw(),  // Close claw
+                        new SleepAction( 2),
+                        claw.openClaw(),    // Open claw
+                        new SleepAction( 2),    // Custom wait 1.5 seconds
+                        claw.CloseClaw()     // Close again
+                )
+        ));
+
+        // Optional: Display timer telemetry
+        // ✅ Display final telemetry and IMU angle
+        while (opModeIsActive()) {
+            double currentAngle = pinpoint.getHeading();
+            telemetry.addData("Final Timer", "Elapsed: %.2f sec", getRuntime());
+            telemetry.addData("Initial IMU Angle", "%.2f radians", initialAngle);
+            telemetry.addData("Current IMU Angle", "%.2f radians", currentAngle);
+            telemetry.update();
+        }
     }
 }
