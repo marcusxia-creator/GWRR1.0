@@ -133,19 +133,26 @@ public class NewAutoTest extends LinearOpMode {
         pinpoint.resetPosAndIMU();
         double initialAngle = pinpoint.getPosition().getHeading(AngleUnit.DEGREES);
 
-        telemetry.addData("IMU Initialized", "Initial Angle: %.2f radians", initialAngle);
-        telemetry.update();
-
         ElapsedTime timer = new ElapsedTime();
 
         // Build the action-based trajectory
-        TrajectoryActionBuilder traj1 = drive.actionBuilder(startPose)
-                .splineToConstantHeading(new Vector2d(20,20),Math.toRadians(90));// Turn 90 degrees
+        TrajectoryActionBuilder traj0= drive.actionBuilder(startPose)
+                .splineToConstantHeading(new Vector2d(20,20),Math.toRadians(90))
+                .afterDisp(10, claw.CloseClaw())
+                .afterTime(2, claw.openClaw())
+                .stopAndAdd(claw.CloseClaw())
+                .setReversed(true);// Turn 90 degrees
 
-        Action trajpath = traj1.build();
-        Action trajectoryActionCloseOut = traj1.endTrajectory().fresh()
-                .splineTo(new Vector2d(0, 0), Math.toRadians(90))
+
+        Action trajpath = traj0.build();
+        Action trajectoryActionCloseOut = traj0.endTrajectory().fresh()
+                .setTangent(0)
+                .splineToConstantHeading(new Vector2d(30, 0), Math.toRadians(-90))
                 .build();
+
+        Actions.runBlocking(claw.openClaw());
+        telemetry.addData("IMU Initialized", "Initial Angle: %.2f degree", initialAngle);
+        telemetry.update();
 
         waitForStart();
         if (isStopRequested()) return;
@@ -153,14 +160,14 @@ public class NewAutoTest extends LinearOpMode {
         // Run the action sequence in parallel (without `Actions.delay()`)
         Actions.runBlocking(new ParallelAction(
                 new SequentialAction(
-                        trajpath,  // Move forward
+                        trajpath,// Move forward
                         trajectoryActionCloseOut  // Move back
                 ),
                 new SequentialAction(
                         claw.CloseClaw(),  // Close claw
-                        new SleepAction( 2),
+                        new SleepAction( 10),
                         claw.openClaw(),    // Open claw
-                        new SleepAction( 2),    // Custom wait 1.5 seconds
+                        new SleepAction( 12),    // Custom wait 1.5 seconds
                         claw.CloseClaw()     // Close again
                 )
         ));
@@ -168,10 +175,10 @@ public class NewAutoTest extends LinearOpMode {
         // Optional: Display timer telemetry
         // ✅ Display final telemetry and IMU angle
         while (opModeIsActive()) {
-            double currentAngle = pinpoint.getHeading();
+            double currentAngle = pinpoint.getPosition().getHeading(AngleUnit.DEGREES);
             telemetry.addData("Final Timer", "Elapsed: %.2f sec", getRuntime());
-            telemetry.addData("Initial IMU Angle", "%.2f radians", initialAngle);
-            telemetry.addData("Current IMU Angle", "%.2f radians", currentAngle);
+            telemetry.addData("Initial IMU Angle", "%.2f degree", initialAngle);
+            telemetry.addData("Current IMU Angle", "%.2f degree", currentAngle);
             telemetry.update();
         }
     }
