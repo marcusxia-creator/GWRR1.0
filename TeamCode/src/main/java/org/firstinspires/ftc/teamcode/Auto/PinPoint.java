@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.TeleOps;
+package org.firstinspires.ftc.teamcode.Auto;
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 
@@ -16,7 +16,7 @@ public class PinPoint {
     }
 
     public void initPinPoint() {
-        pinPoint.setOffsets(-149.225, -165.1); //these are tuned for 3110-0002-0001 Product Insight #1
+        pinPoint.setOffsets(-149.225, -131.2468, DistanceUnit.MM); //-165.1); //these are tuned for 3110-0002-0001 Product Insight #1
         pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         pinPoint.resetPosAndIMU();
