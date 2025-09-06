@@ -12,6 +12,7 @@ import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Autonomous(name="First RR1.0 Actions")
@@ -31,60 +32,59 @@ public class FirstRoadRunnerAction extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         MecanumDrive drive = new MecanumDrive(hardwareMap,new Pose2d(0,0,0));
-        Servo servo = hardwareMap.servo.get("servo");
+        RobotHardware robot = new RobotHardware(hardwareMap);
+        robot.init();
+
         Pose2d initialPose = new Pose2d(0,0,0);
         TrajectoryActionBuilder driveForwards = drive.actionBuilder(initialPose)
                         .lineToX(0);
         TrajectoryActionBuilder intakeSamples = driveForwards.endTrajectory().fresh()
                         .strafeToLinearHeading(new Vector2d(-4,45), Math.toRadians(90))
                         .lineToX(12)
-                        .stopAndAdd(servo.setPosition(0.3))
-                        .afterDisp(12,servo.setPosition(0.6))
+                        .afterDisp(12,new ServoAction(robot, 0.5))
                         .lineToXConstantHeading(10)
-                        .stopAndAdd(servo.setPosition(0));
+                        .stopAndAdd(new ServoAction(robot, 0.2));
 
         waitForStart();
-
-
 
         Actions.runBlocking(
                 drive.actionBuilder(new Pose2d(0, 0, 0))
                         .lineToX(64)
-                        .stopAndAdd(new PatientServoAction(servo,0))
-                        .stopAndAdd(new ServoAction(servo,0.5))
+                        .stopAndAdd(new PatientServoAction(robot,0))
+                        .stopAndAdd(new PatientServoAction(robot, 0.5))
                         .lineToX(0)
-                        .stopAndAdd(new PatientServoAction(servo,1.0))
+                        .stopAndAdd(new PatientServoAction(robot, 1.0))
                         .waitSeconds(1)
                         .build());
 
     }
 
     public class ServoAction implements Action {
-        Servo servo;
+        RobotHardware robot;
         double position;
 
-        public ServoAction(Servo s, double p)
+        public ServoAction(RobotHardware robot, double p)
         {
-            this.servo = s;
+            this.robot = robot;
             this.position = p;
         }
 
         @Override
         public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            servo.setPosition(position);
+            robot.intakeClawServo.setPosition(position);
             return false;
         }
     }
 
     public class PatientServoAction implements Action {
-        Servo servo;
+        RobotHardware robot;
         double position;
         ElapsedTime timer;
         boolean hasInitialized = false;
 
-        public PatientServoAction(Servo s, double p)
+        public PatientServoAction(RobotHardware robot, double p)
         {
-            this.servo = s;
+            this.robot = robot;
             this.position = p;
         }
 
@@ -93,17 +93,18 @@ public class FirstRoadRunnerAction extends LinearOpMode {
             if (timer == null || !hasInitialized){
                 hasInitialized = true;
                 timer = new ElapsedTime();
-                servo.setPosition(position);
-                robot.intakeSlides.slidesMotor.setPower(0);     // only run once
+                robot.depositClawServo.setPosition(position);
+                robot.liftMotorLeft.setPower(0);     // only run once
             }
             // do we need to keep running?
-            robot.intakeSlide.slidesMotor.setPower(0.1);
+            robot.liftMotorRight.setPower(0.1);
             return timer.seconds() < 3;
             //return motor.getPosition() >= targetPosition;
         }
-
+        /**
         public Action cool (Robot robot){
             return new cool(robot);
         }
+         */
     }
 }
